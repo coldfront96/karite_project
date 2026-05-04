@@ -1,4 +1,4 @@
-# 🇬🇧 Karite English Teaching Chatbot
+# Karite English Teaching Chatbot
 
 An interactive command-line chatbot that teaches English from **basic to advanced** level. No internet connection or API keys required — everything runs locally.
 
