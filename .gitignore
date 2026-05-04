@@ -1,0 +1,22 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Pytest cache
+.pytest_cache/
+
+# User progress file (generated at runtime)
+.progress.json
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Editor files
+.idea/
+.vscode/
+*.swp
+*.swo
