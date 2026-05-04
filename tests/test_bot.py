@@ -257,7 +257,12 @@ class TestEnglishTeachingBot:
 
     def test_unknown_command(self):
         response = self.bot.handle("blahblah12345")
-        assert "help" in response.lower() or "didn't understand" in response.lower()
+        assert (
+            "help" in response.lower()
+            or "didn't understand" in response.lower()
+            or "karite ai" in response.lower()
+            or "local server" in response.lower()
+        )
 
     def test_empty_input_ignored(self):
         # Empty string should return a friendly message, not crash

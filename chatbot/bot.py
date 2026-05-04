@@ -3,6 +3,8 @@ Core chatbot logic for the English Teaching Chatbot.
 Handles conversation state, user input routing, and response generation.
 """
 
+import requests
+
 from .curriculum import (
     CURRICULUM,
     get_levels,
@@ -137,10 +139,8 @@ class EnglishTeachingBot:
         if topic_response:
             return topic_response
 
-        return (
-            f"I didn't understand '{text}'. Type 'help' to see available commands, "
-            "or 'menu' to choose a topic."
-        )
+        # Fallback: Route to the local AI
+        return self._ask_local_ai(text)
 
     # ------------------------------------------------------------------
     # Learning flow
@@ -412,6 +412,43 @@ class EnglishTeachingBot:
             "  Type 'menu'  to choose a different topic",
         ]
         return "\n".join(lines)
+
+    # ------------------------------------------------------------------
+    # Local AI bridge
+    # ------------------------------------------------------------------
+
+    def _ask_local_ai(self, text):
+        """Routes unknown questions to the local LLM server."""
+        current_level = self.progress.current_level
+        current_topic = self.progress.current_topic or "general English basics"
+
+        system_prompt = (
+            "You are Karite, an enthusiastic and expert Samoan-English bilingual teacher. "
+            f"The user is currently studying the '{current_level}' level, specifically '{current_topic}'. "
+            "Answer their question accurately. If they ask for a translation from Samoan to English, or English to Samoan, provide it clearly with a brief explanation. Keep your answer under 4 sentences."
+        )
+
+        payload = {
+            "model": "llama3", # Note: We can change this to the exact local model name later
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": text}
+            ],
+            "temperature": 0.3
+        }
+
+        try:
+            response = requests.post(
+                "http://localhost:11434/v1/chat/completions",
+                json=payload,
+                timeout=30
+            )
+            response.raise_for_status()
+            data = response.json()
+            ai_reply = data["choices"][0]["message"]["content"]
+            return f"🤖 Karite AI: {ai_reply}"
+        except (requests.exceptions.RequestException, KeyError, IndexError):
+            return "Oops! I couldn't reach my AI brain. Please make sure the local server is running! 🌸"
 
     # ------------------------------------------------------------------
     # Progress & reset
