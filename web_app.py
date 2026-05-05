@@ -11,6 +11,7 @@ UI_TEXT = {
         "nav_header": "Navigation",
         "btn_menu": "Menu",
         "btn_progress": "Check Progress",
+        "review_header": "🔁 Review Topics",
         "instructions": "Type commands like `start`, `next`, or `quiz` in the chat, or switch to conversational mode to chat freely!",
         "chat_placeholder": "Type your message here...",
         "thinking": "Thinking...",
@@ -29,6 +30,7 @@ UI_TEXT = {
         "nav_header": "Fa'atautaiga (Navigation)",
         "btn_menu": "Lisi (Menu)",
         "btn_progress": "Siaki le Alualu i Luma (Progress)",
+        "review_header": "🔁 Toe Iloilo Autu (Review Topics)",
         "instructions": "Ta'i i totonu upu e pei o le `start`, `next`, po'o le `quiz` i le talanoaga, pe fesuia'i i le tulaga fa'atalanoaga e talanoa saoloto ai!",
         "chat_placeholder": "Ta'i lau fe'au i'i...",
         "thinking": "Mafaufau...",
@@ -99,6 +101,21 @@ if st.session_state.logged_in_user:
             st.session_state.chat_history.append({"role": "assistant", "content": response})
             st.rerun()
         st.markdown("---")
+        # Dynamic one-click review buttons for completed topics
+        completed = st.session_state.bot.progress.completed_topics_list()
+        if completed:
+            st.subheader(UI_TEXT[lang]["review_header"])
+            for topic_key in completed:
+                # topic_key is "level/topic" – display just the topic part
+                bare_topic = topic_key.split("/", 1)[-1]
+                short_name = bare_topic.replace("_", " ").title()
+                if st.button(f"🔁 {short_name}", key=f"review_{topic_key}"):
+                    cmd = f"review {bare_topic}"
+                    st.session_state.chat_history.append({"role": "user", "content": cmd})
+                    response = st.session_state.bot.handle(cmd)
+                    st.session_state.chat_history.append({"role": "assistant", "content": response})
+                    st.rerun()
+            st.markdown("---")
         st.markdown(UI_TEXT[lang]["instructions"])
 
     st.title(UI_TEXT[lang]["title"])

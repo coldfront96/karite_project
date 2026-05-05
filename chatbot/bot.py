@@ -128,6 +128,11 @@ class EnglishTeachingBot:
         if self._admin_awaiting_password:
             return self._handle_admin_password(text)
 
+        # Handle review command: "review [topic]" – available from any mode
+        if cmd.startswith("review "):
+            topic_key = cmd[len("review "):].strip()
+            return self._start_review(topic_key)
+
         # ── No mode set / mode menu ────────────────────────────────────
         if self._current_mode is None or self._current_mode == "menu":
             return self._handle_mode_selection(cmd)
@@ -194,11 +199,6 @@ class EnglishTeachingBot:
         # Handle level selection by name
         if cmd in get_levels(self.target_language):
             return self._select_level(cmd)
-
-        # Handle review command: "review [topic]"
-        if cmd.startswith("review "):
-            topic_key = cmd[len("review "):].strip()
-            return self._start_review(topic_key)
 
         # Fallback: try to find a topic by name
         topic_response = self._maybe_select_topic(cmd)
