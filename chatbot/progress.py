@@ -11,13 +11,18 @@ import sys
 class ProgressTracker:
     """Tracks which lessons and quizzes the user has completed."""
 
-    def __init__(self, save_path=None):
+    def __init__(self, save_path=None, initial_data=None, save_callback=None):
         """
         Args:
             save_path: Optional filesystem path to persist progress as JSON.
                        If None, progress is stored in memory only.
+            initial_data: Optional dict to pre-populate progress (e.g. from a
+                          database). Takes precedence over save_path loading.
+            save_callback: Optional callable(progress_dict) invoked whenever
+                           progress changes. Used by the database backend.
         """
         self._save_path = save_path
+        self._save_callback = save_callback
         self._data = {
             "current_level": "basic",
             "current_topic": None,
@@ -26,7 +31,11 @@ class ProgressTracker:
             "total_correct": 0,
             "total_questions": 0,
         }
-        if save_path and os.path.exists(save_path):
+        if initial_data:
+            for key in self._data:
+                if key in initial_data:
+                    self._data[key] = initial_data[key]
+        elif save_path and os.path.exists(save_path):
             self._load()
 
     # ------------------------------------------------------------------
@@ -118,6 +127,14 @@ class ProgressTracker:
                     json.dump(self._data, fh, indent=2)
             except OSError:
                 pass  # Don't crash if we can't write progress
+        if self._save_callback:
+            try:
+                self._save_callback(self._data)
+            except Exception as exc:
+                print(
+                    f"Warning: progress save callback failed ({exc}).",
+                    file=sys.stderr,
+                )
 
     def _load(self):
         try:
