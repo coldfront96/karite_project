@@ -3,6 +3,7 @@ Core chatbot logic for the English Teaching Chatbot.
 Handles conversation state, user input routing, and response generation.
 """
 
+import os
 import requests
 
 from .memory import load_dictionary, save_translation
@@ -215,6 +216,8 @@ class EnglishTeachingBot:
                 "Type 'exit' or 'menu' to return to the main menu."
             )
         if cmd == "admin":
+            # Hidden command – intentionally omitted from help/menu text so that
+            # regular users are not aware of the admin interface.
             self._admin_awaiting_password = True
             return "🔒 Admin mode requested. Please enter the admin password:"
         return self._show_mode_menu()
@@ -223,7 +226,9 @@ class EnglishTeachingBot:
     # Admin mode helpers
     # ------------------------------------------------------------------
 
-    _ADMIN_PASSWORD = "samoa2026"
+    # Admin password is read from the KARITE_ADMIN_PASSWORD environment variable.
+    # Falls back to the default value only when the variable is not set.
+    _ADMIN_PASSWORD = os.environ.get("KARITE_ADMIN_PASSWORD", "samoa2026")
 
     def _handle_admin_password(self, text):
         """Validate the admin password and transition into admin mode."""
@@ -573,10 +578,21 @@ class EnglishTeachingBot:
                     + entries
                     + "\nAlways use these verified translations when the phrase appears."
                 )
+            if self._current_mode == "admin":
+                context_description = (
+                    "An admin teacher is testing your translations in Admin Teaching Mode. "
+                    "Provide your best Samoan-to-English (or English-to-Samoan) translation "
+                    "so the admin can verify or correct it."
+                )
+            else:
+                context_description = (
+                    "The user is in the Conversational Sandbox. "
+                    "They will give you a phrase in English or Samoan."
+                )
             system_prompt = (
                 "You are Karite, an expert Samoan-English bilingual teacher. "
-                "The user is in the Conversational Sandbox. They will give you a phrase in English or Samoan. "
-                "You MUST output your response in this exact strict format: "
+                + context_description
+                + " You MUST output your response in this exact strict format: "
                 "\n\n1. 🤖 **Direct Translation:** (The literal, word-for-word meaning) "
                 "\n2. 🗣️ **Conversational Translation:** (How a native speaker would actually say it in casual conversation) "
                 "\n3. 🧠 **The Breakdown:** (Explain WHY the conversational version is different. Point out any idioms, dropped words, or cultural context)."

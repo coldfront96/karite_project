@@ -5,8 +5,11 @@ Reads and writes custom Samoan-to-English translations to a local JSON file.
 
 import json
 import os
+import threading
 
 DICTIONARY_PATH = os.path.join(os.path.dirname(__file__), "..", "custom_dictionary.json")
+
+_lock = threading.Lock()
 
 
 def load_dictionary():
@@ -28,12 +31,16 @@ def save_translation(samoan_phrase, english_translation):
     """
     Add or update a translation in custom_dictionary.json.
 
+    The read-modify-write cycle is protected by a module-level lock so that
+    concurrent calls from multiple threads cannot lose each other's updates.
+
     Args:
         samoan_phrase: The Samoan phrase (used as the key).
         english_translation: The correct English meaning (used as the value).
     """
     path = os.path.abspath(DICTIONARY_PATH)
-    dictionary = load_dictionary()
-    dictionary[samoan_phrase] = english_translation
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(dictionary, f, ensure_ascii=False, indent=2)
+    with _lock:
+        dictionary = load_dictionary()
+        dictionary[samoan_phrase] = english_translation
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(dictionary, f, ensure_ascii=False, indent=2)
