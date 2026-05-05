@@ -609,6 +609,15 @@ class EnglishTeachingBot:
         else:
             current_level = self.progress.current_level
             current_topic = self.progress.current_topic or "general English basics"
+            lesson_context = ""
+            if self._current_mode == "curriculum" and self.progress.current_topic:
+                # Safely attempt to fetch the current lesson text from the curriculum dictionary
+                try:
+                    topic_data = CURRICULUM[self.progress.current_level][self.progress.current_topic]
+                    lesson_text = topic_data.get("explanation", "")
+                    lesson_context = f"\n\nCRITICAL CONTEXT: The user is currently reading this exact lesson: '{lesson_text}'. Answer their question based strictly on this lesson."
+                except KeyError:
+                    pass
             system_prompt = (
                 "You are Karite, an enthusiastic and expert Samoan-English bilingual teacher. "
                 f"The user is currently studying the '{current_level}' level, specifically '{current_topic}'. "
@@ -617,6 +626,7 @@ class EnglishTeachingBot:
                 "\n1. 🎯 **Translation:** Provide the direct translation. "
                 "\n2. 🧠 **How it Works (Grammar):** Explain the sentence structure. Explicitly point out grammatical differences, such as English Subject-Verb-Object (SVO) versus Samoan Verb-Subject-Object (VSO) patterns. "
                 "\n3. 📖 **Vocabulary Breakdown:** Briefly define the key words used."
+                + lesson_context
             )
 
         payload = {
