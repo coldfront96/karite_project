@@ -613,7 +613,6 @@ class EnglishTeachingBot:
             if self._current_mode == "curriculum" and self.progress.current_topic:
                 # Safely attempt to fetch the current lesson text from the curriculum dictionary
                 try:
-                    from .curriculum import CURRICULUM
                     topic_data = CURRICULUM[self.progress.current_level][self.progress.current_topic]
                     lesson_text = topic_data.get("explanation", "")
                     lesson_context = f"\n\nCRITICAL CONTEXT: The user is currently reading this exact lesson: '{lesson_text}'. Answer their question based strictly on this lesson."
