@@ -84,10 +84,12 @@ class EnglishTeachingBot:
             save_callback=save_callback,
         )
         self.ui_language = "English"
+        self.target_language = "English"
         self._quiz_state = None          # Active quiz session or None
-        self._current_mode = None        # "menu", "curriculum", "conversational", or "admin"
+        self._current_mode = None        # "menu", "curriculum", "conversational", "review", or "admin"
         self._admin_pending_phrase = None  # Phrase awaiting admin correction
         self._admin_awaiting_password = False  # True while waiting for admin password
+        self._review_topic = None        # Topic currently being reviewed in endless practice loop
 
     # ------------------------------------------------------------------
     # Public interface
@@ -134,6 +136,7 @@ class EnglishTeachingBot:
         if cmd == "menu":
             self._current_mode = "menu"
             self._admin_pending_phrase = None
+            self._review_topic = None
             return self._show_mode_menu()
 
         # ── Admin teaching mode ────────────────────────────────────────
@@ -150,6 +153,14 @@ class EnglishTeachingBot:
                 self._current_mode = "menu"
                 return self._show_mode_menu()
             return self._ask_local_ai(text)
+
+        # ── Endless Practice (review) mode ─────────────────────────────
+        if self._current_mode == "review":
+            if cmd in ("menu", "exit"):
+                self._current_mode = "menu"
+                self._review_topic = None
+                return self._show_mode_menu()
+            return self._generate_practice(user_input=text)
 
         # ── Curriculum mode ────────────────────────────────────────────
         if cmd == "exit":
@@ -184,6 +195,11 @@ class EnglishTeachingBot:
         if cmd in get_levels():
             return self._select_level(cmd)
 
+        # Handle review command: "review [topic]"
+        if cmd.startswith("review "):
+            topic_key = cmd[len("review "):].strip()
+            return self._start_review(topic_key)
+
         # Fallback: try to find a topic by name
         topic_response = self._maybe_select_topic(cmd)
         if topic_response:
@@ -197,7 +213,7 @@ class EnglishTeachingBot:
     # ------------------------------------------------------------------
 
     def _show_mode_menu(self):
-        return (
+        menu = (
             "\n"
             "╔══════════════════════════════════════════════════════════════╗\n"
             "║              Choose Your Learning Mode                       ║\n"
@@ -208,6 +224,13 @@ class EnglishTeachingBot:
             "\n"
             "Type 1 or 2 to select a mode."
         )
+        completed = self.progress.completed_topics_list()
+        if completed:
+            menu += (
+                "\n\n🔁 You have past topics you can revisit!\n"
+                "Type 'review [topic name]' to enter the Endless Practice Loop for a past subject!"
+            )
+        return menu
 
     def _handle_mode_selection(self, cmd):
         if cmd == "1":
@@ -567,6 +590,72 @@ class EnglishTeachingBot:
             "  Type 'menu'   to return to the main mode menu",
         ]
         return "\n".join(lines)
+
+    # ------------------------------------------------------------------
+    # Endless Practice (review) mode
+    # ------------------------------------------------------------------
+
+    def _start_review(self, topic_key):
+        """Validate topic_key against completed topics and enter review mode."""
+        completed = self.progress.completed_topics_list()
+        # topic_key can be bare topic name or "level/topic" – normalise
+        matched_key = None
+        normalised = topic_key.replace(" ", "_")
+        for key in completed:
+            _, tp = key.split("/", 1)
+            if normalised == tp.replace(" ", "_") or topic_key == key:
+                matched_key = key
+                break
+        if matched_key is None:
+            return (
+                f"❌ '{topic_key}' is not in your completed topics.\n"
+                "Complete a topic quiz first, then type 'review [topic name]' to revisit it.\n"
+                "Type 'progress' to see your completed topics."
+            )
+        self._current_mode = "review"
+        self._review_topic = matched_key
+        return self._generate_practice()
+
+    def _generate_practice(self, user_input=None):
+        """Generate an AI-driven practice question or evaluate a user answer."""
+        system_prompt = (
+            f"You are Karite, an expert {self.target_language} teacher. "
+            f"The user is in an endless practice loop reviewing the topic: '{self._review_topic}'. "
+        )
+        if user_input is None:
+            user_message = (
+                "Generate ONE brief, brand new example teaching this concept, "
+                "and then ask the user ONE question to test their understanding. "
+                "Do NOT provide the answer yet."
+            )
+        else:
+            user_message = (
+                f"The user answered: '{user_input}'. "
+                f"Evaluate their answer. If wrong, explain why using {self.target_language} rules. "
+                "Then, immediately generate ONE new example and question to keep the practice loop going."
+            )
+
+        payload = {
+            "model": "llama3",
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_message},
+            ],
+            "temperature": 0.7,
+        }
+
+        try:
+            response = requests.post(
+                "http://localhost:11434/v1/chat/completions",
+                json=payload,
+                timeout=30,
+            )
+            response.raise_for_status()
+            data = response.json()
+            ai_reply = data["choices"][0]["message"]["content"]
+            return f"🤖 Karite AI: {ai_reply}\n\n(Type 'menu' or 'exit' to leave the practice loop.)"
+        except (requests.exceptions.RequestException, KeyError, IndexError):
+            return "Oops! I couldn't reach my AI brain. Please make sure the local server is running! 🌸"
 
     # ------------------------------------------------------------------
     # Local AI bridge
