@@ -1,11 +1,12 @@
 """
-English Teaching Curriculum
-Covers Basic, Intermediate, and Advanced levels.
+Language Teaching Curriculum
+Covers English (Basic, Intermediate, Advanced) and Samoan (Level 1) modules.
 Each level contains topics with explanations, examples, and exercises.
 """
 
 CURRICULUM = {
-    "basic": {
+    "English": {
+        "basic": {
         "description": "Perfect for beginners. We'll cover the absolute fundamentals of English.",
         "topics": {
             "alphabet": {
@@ -722,6 +723,38 @@ CURRICULUM = {
             },
         },
     },
+    },  # end "English"
+    "Samoan": {
+        "Level 1": {
+            "basics": {
+                "explanation": (
+                    "Welcome to Samoan basics. Samoan uses a Verb-Subject-Object (VSO) structure,\n"
+                    "which is different from English's Subject-Verb-Object (SVO) order.\n\n"
+                    "Example:\n"
+                    "  English (SVO): The dog  bites  the man.\n"
+                    "  Samoan  (VSO): Ua 'ai  e le maile  le tagata.\n"
+                    "                 (Bites the dog    the man.)\n\n"
+                    "Common greetings:\n"
+                    "  • Talofa       – Hello\n"
+                    "  • Fa'afetai    – Thank you\n"
+                    "  • Tofa         – Goodbye"
+                ),
+                "questions": [
+                    {
+                        "question": "What word order does Samoan use?",
+                        "choices": [
+                            "A) Subject-Verb-Object (SVO)",
+                            "B) Verb-Subject-Object (VSO)",
+                            "C) Object-Subject-Verb (OSV)",
+                            "D) Verb-Object-Subject (VOS)",
+                        ],
+                        "answer": "B",
+                        "explanation": "Samoan follows Verb-Subject-Object (VSO) order, unlike English which is SVO.",
+                    },
+                ],
+            },
+        },
+    },
 }
 
 LEVEL_ORDER = ["basic", "intermediate", "advanced"]
@@ -763,12 +796,12 @@ def get_topics(level):
 
 def get_lesson(level, topic):
     """Return the lesson dict for the given level and topic, or None."""
-    return CURRICULUM.get(level, {}).get("topics", {}).get(topic)
+    return CURRICULUM["English"].get(level, {}).get("topics", {}).get(topic)
 
 
 def get_level_description(level):
     """Return the description for a level."""
-    return CURRICULUM.get(level, {}).get("description", "")
+    return CURRICULUM["English"].get(level, {}).get("description", "")
 
 
 def next_topic(level, topic):
