@@ -16,7 +16,7 @@ from chatbot.curriculum import (
     next_topic,
 )
 from chatbot.progress import ProgressTracker
-from chatbot.bot import EnglishTeachingBot, WELCOME_MESSAGE, HELP_TEXT
+from chatbot.bot import EnglishTeachingBot, BOT_TEXT
 
 
 # ---------------------------------------------------------------------------
@@ -200,12 +200,12 @@ class TestEnglishTeachingBot:
         self.bot._current_mode = "curriculum"
 
     def test_greet_returns_welcome_message(self):
-        assert self.bot.greet() == WELCOME_MESSAGE
+        assert self.bot.greet() == BOT_TEXT["English"]["welcome"]
 
     def test_help_command(self):
         response = self.bot.handle("help")
         assert "commands" in response.lower()
-        assert "quit" in response.lower()
+        assert "exit" in response.lower()
 
     def test_question_mark_returns_help(self):
         response = self.bot.handle("?")
