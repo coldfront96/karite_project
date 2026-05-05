@@ -663,19 +663,19 @@ class EnglishTeachingBot:
 
     def _ask_local_ai(self, text):
         """Routes unknown questions to the local LLM server."""
+        # Load the dictionary universally
+        custom_dict = load_dictionary()
+        memory_context = ""
+        if custom_dict:
+            entries = "\n".join(
+                f"  - '{k}' means '{v}'" for k, v in custom_dict.items()
+            )
+            memory_context = (
+                "\n\nIMPORTANT – Custom translation memory (admin-verified):\n"
+                + entries
+                + "\nAlways use these verified translations when the phrase appears."
+            )
         if self._current_mode in ("conversational", "admin"):
-            # Inject any admin-taught translations so the AI is aware of them
-            custom_dict = load_dictionary()
-            memory_context = ""
-            if custom_dict:
-                entries = "\n".join(
-                    f"  - '{k}' means '{v}'" for k, v in custom_dict.items()
-                )
-                memory_context = (
-                    "\n\nIMPORTANT – Custom translation memory (admin-verified):\n"
-                    + entries
-                    + "\nAlways use these verified translations when the phrase appears."
-                )
             if self._current_mode == "admin":
                 context_description = (
                     "An admin teacher is testing your translations in Admin Teaching Mode. "
@@ -719,6 +719,7 @@ class EnglishTeachingBot:
                 "\n3. 📖 **Vocabulary Breakdown:** Briefly define the key words used."
                 + lesson_context
                 + f" CRITICAL INSTRUCTION: You MUST speak, converse, and provide all explanations entirely in {self.ui_language}. Use {self.ui_language} as your primary medium of communication."
+                + memory_context
             )
 
         payload = {
