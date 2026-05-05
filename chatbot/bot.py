@@ -670,6 +670,7 @@ class EnglishTeachingBot:
         
         system_prompt = (
             f"You are Karite, an expert {self.target_language} teacher. "
+            f"CRITICAL: You MUST write your entire response, explanations, and feedback entirely in {self.ui_language}. "
             f"The user is reviewing the topic: '{display_topic}'. "
             "You MUST format your response to EXACTLY match this visual template:\n\n"
             "──────────────────────────────────────────────────────────────\n"
@@ -758,7 +759,7 @@ class EnglishTeachingBot:
                     "They will give you a phrase in English or Samoan."
                 )
             system_prompt = (
-                "You are Karite, an expert Samoan-English bilingual teacher. "
+                "You are Karite, an expert {self.target_language} teacher. "
                 + context_description
                 + " You MUST output your response in this exact strict format: "
                 "\n\n1. 🤖 **Direct Translation:** (The literal, word-for-word meaning) "
@@ -781,7 +782,7 @@ class EnglishTeachingBot:
                 except KeyError:
                     pass
             system_prompt = (
-                "You are Karite, an enthusiastic and expert Samoan-English bilingual teacher. "
+                f"You are Karite, an enthusiastic and expert Samoan-English bilingual teacher. "
                 f"The user is currently studying the '{current_level}' level, specifically '{current_topic}'. "
                 "If the user asks a general question, answer it clearly and concisely. "
                 "CRITICAL INSTRUCTION: If the user inputs a sentence for translation (either Samoan to English, or English to Samoan), you MUST strictly follow this format: "
