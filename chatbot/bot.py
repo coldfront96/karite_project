@@ -192,7 +192,7 @@ class EnglishTeachingBot:
             return self._handle_number_choice(int(cmd))
 
         # Handle level selection by name
-        if cmd in get_levels():
+        if cmd in get_levels(self.target_language):
             return self._select_level(cmd)
 
         # Handle review command: "review [topic]"
@@ -327,7 +327,7 @@ class EnglishTeachingBot:
 
         if topic is None:
             # Start at the first topic of the current level
-            topics = get_topics(level)
+            topics = get_topics(self.target_language, level)
             topic = topics[0] if topics else None
 
         if topic is None:
@@ -346,7 +346,7 @@ class EnglishTeachingBot:
         # Mark current topic complete (if not already)
         self.progress.mark_topic_complete(level, topic)
 
-        nxt_level, nxt_topic = next_topic(level, topic)
+        nxt_level, nxt_topic = next_topic(self.target_language, level, topic)
         if nxt_level is None:
             return (
                 "🎉 Congratulations! You have completed ALL lessons!\n\n"
@@ -360,7 +360,7 @@ class EnglishTeachingBot:
         return self._present_lesson(nxt_level, nxt_topic)
 
     def _present_lesson(self, level, topic):
-        lesson = get_lesson(level, topic)
+        lesson = get_lesson(self.target_language, level, topic)
         if lesson is None:
             return f"Lesson not found for {level}/{topic}."
 
@@ -396,8 +396,8 @@ class EnglishTeachingBot:
 
     def _show_menu(self):
         lines = ["", "=== LEARNING MENU ===", ""]
-        for i, level in enumerate(get_levels(), 1):
-            desc = get_level_description(level)
+        for i, level in enumerate(get_levels(self.target_language), 1):
+            desc = get_level_description(self.target_language, level)
             lines.append(f"  {i}. {level.upper()}")
             lines.append(f"     {desc}")
             lines.append("")
@@ -406,7 +406,7 @@ class EnglishTeachingBot:
         return "\n".join(lines)
 
     def _list_levels(self):
-        levels = get_levels()
+        levels = get_levels(self.target_language)
         lines = ["Available levels:"]
         for lv in levels:
             lines.append(f"  • {lv}")
@@ -415,10 +415,10 @@ class EnglishTeachingBot:
 
     def _list_topics(self):
         level = self.progress.current_level
-        topics = get_topics(level)
+        topics = get_topics(self.target_language, level)
         lines = [f"Topics for level '{level.upper()}':"]
         for topic in topics:
-            lesson = get_lesson(level, topic)
+            lesson = get_lesson(self.target_language, level, topic)
             title = lesson["title"] if lesson else topic
             done = " ✓" if self.progress.is_topic_complete(level, topic) else ""
             lines.append(f"  • {topic}  –  {title}{done}")
@@ -427,7 +427,7 @@ class EnglishTeachingBot:
 
     def _select_level(self, level):
         self.progress.current_level = level
-        topics = get_topics(level)
+        topics = get_topics(self.target_language, level)
         if not topics:
             return f"No topics available for level '{level}'."
         first_topic = topics[0]
@@ -435,12 +435,12 @@ class EnglishTeachingBot:
         return self._present_lesson(level, first_topic)
 
     def _handle_number_choice(self, number):
-        levels = get_levels()
+        levels = get_levels(self.target_language)
         if 1 <= number <= len(levels):
             return self._select_level(levels[number - 1])
         # Maybe it's a topic number
         level = self.progress.current_level
-        topics = get_topics(level)
+        topics = get_topics(self.target_language, level)
         if 1 <= number <= len(topics):
             topic = topics[number - 1]
             self.progress.current_topic = topic
@@ -449,14 +449,14 @@ class EnglishTeachingBot:
 
     def _maybe_select_topic(self, text):
         level = self.progress.current_level
-        topics = get_topics(level)
+        topics = get_topics(self.target_language, level)
         for topic in topics:
             if text == topic or text.replace(" ", "_") == topic:
                 self.progress.current_topic = topic
                 return self._present_lesson(level, topic)
         # Also search all levels
-        for lv in get_levels():
-            for topic in get_topics(lv):
+        for lv in get_levels(self.target_language):
+            for topic in get_topics(self.target_language, lv):
                 if text == topic or text.replace(" ", "_") == topic:
                     self.progress.current_level = lv
                     self.progress.current_topic = topic
@@ -474,7 +474,7 @@ class EnglishTeachingBot:
         if topic is None:
             return "Please start a lesson first. Type 'start' or 'menu'."
 
-        lesson = get_lesson(level, topic)
+        lesson = get_lesson(self.target_language, level, topic)
         if lesson is None:
             return "No lesson loaded. Type 'menu' to choose a topic."
 
@@ -769,7 +769,7 @@ class EnglishTeachingBot:
         if completed:
             for key in completed:
                 lv, tp = key.split("/", 1)
-                lesson = get_lesson(lv, tp)
+                lesson = get_lesson(self.target_language, lv, tp)
                 title = lesson["title"] if lesson else tp
                 c, t = self.progress.get_quiz_score(lv, tp)
                 score_str = f"  (quiz: {c}/{t})" if t > 0 else ""

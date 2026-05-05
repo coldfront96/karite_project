@@ -784,42 +784,43 @@ TOPIC_ORDER = {
 }
 
 
-def get_levels():
-    """Return a list of available curriculum levels."""
+def get_levels(course="English"):
+    if course == "Samoan":
+        return ["Level 1"]
     return LEVEL_ORDER[:]
 
 
-def get_topics(level):
-    """Return an ordered list of topic keys for a given level."""
+def get_topics(course, level):
+    if course == "Samoan" and level == "Level 1":
+        return ["basics"]
     return TOPIC_ORDER.get(level, [])
 
 
-def get_lesson(level, topic):
-    """Return the lesson dict for the given level and topic, or None."""
-    return CURRICULUM["English"].get(level, {}).get("topics", {}).get(topic)
+def get_lesson(course, level, topic):
+    # Handle slight nesting difference between English and Samoan dictionaries
+    if course == "Samoan":
+        return CURRICULUM.get(course, {}).get(level, {}).get(topic)
+    return CURRICULUM.get(course, {}).get(level, {}).get("topics", {}).get(topic)
 
 
-def get_level_description(level):
-    """Return the description for a level."""
-    return CURRICULUM["English"].get(level, {}).get("description", "")
+def get_level_description(course, level):
+    if course == "Samoan":
+        return "Samoan Basics"
+    return CURRICULUM.get(course, {}).get(level, {}).get("description", "")
 
 
-def next_topic(level, topic):
-    """
-    Return (next_level, next_topic) after the given (level, topic).
-    Returns (None, None) if there is no next topic.
-    """
-    topics = TOPIC_ORDER.get(level, [])
+def next_topic(course, level, topic):
+    topics = get_topics(course, level)
     if topic in topics:
         idx = topics.index(topic)
         if idx + 1 < len(topics):
             return level, topics[idx + 1]
-    # Move to next level
-    if level in LEVEL_ORDER:
-        level_idx = LEVEL_ORDER.index(level)
-        if level_idx + 1 < len(LEVEL_ORDER):
-            next_lv = LEVEL_ORDER[level_idx + 1]
-            next_topics = TOPIC_ORDER.get(next_lv, [])
+    levels = get_levels(course)
+    if level in levels:
+        level_idx = levels.index(level)
+        if level_idx + 1 < len(levels):
+            next_lv = levels[level_idx + 1]
+            next_topics = get_topics(course, next_lv)
             if next_topics:
                 return next_lv, next_topics[0]
     return None, None
