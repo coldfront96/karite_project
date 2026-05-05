@@ -20,7 +20,14 @@ def main():
 
     while True:
         try:
-            user_input = input("You: ").strip()
+            mode = bot._current_mode
+            if mode == "curriculum":
+                prompt = "[📚 Curriculum] You: "
+            elif mode == "conversational":
+                prompt = "[💬 Sandbox] You: "
+            else:
+                prompt = "You: "
+            user_input = input(prompt).strip()
         except (EOFError, KeyboardInterrupt):
             print("\nGoodbye! Keep practicing your English. 👋")
             sys.exit(0)
@@ -31,7 +38,10 @@ def main():
         response = bot.handle(user_input)
         print(f"\nBot: {response}\n")
 
-        if user_input.lower() in ("quit", "exit", "bye"):
+        cmd = user_input.lower()
+        if cmd in ("quit", "bye") or (
+            cmd == "exit" and bot._current_mode != "conversational"
+        ):
             sys.exit(0)
 
 

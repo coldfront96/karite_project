@@ -26,27 +26,32 @@ WELCOME_MESSAGE = """
 
 I can help you learn English from absolute basics to advanced level.
 
-I offer three levels:
-  1. Basic       – Alphabet, greetings, numbers, vocabulary, sentences
-  2. Intermediate – Tenses, prepositions, richer vocabulary
-  3. Advanced    – Conditionals, passive voice, idioms, academic writing
+Please choose your learning mode:
 
-Type 'help' at any time to see available commands.
-Type 'start' to begin learning!
+[1] 📚 Guided Curriculum (Structured Lessons & Quizzes)
+[2] 💬 Conversational Sandbox (AI Translation & Slang Breakdown)
+
+Type 1 or 2 to select a mode. Type 'help' for more commands.
 """.strip()
 
 HELP_TEXT = """
 Available commands:
+  menu             – Return to the main mode selection menu
+  help             – Show this help message
+  quit / bye       – Exit the chatbot
+
+  ── Curriculum Mode ──────────────────────────────
   start            – Start or resume your learning journey
-  menu             – Show the main level/topic menu
   levels           – List available difficulty levels
   topics           – List topics in the current level
   next             – Move to the next lesson
   quiz             – Take the quiz for the current lesson
   progress         – View your progress and quiz scores
   reset            – Reset all progress and start over
-  help             – Show this help message
-  quit / exit / bye – Exit the chatbot
+
+  ── Conversational Sandbox ───────────────────────
+  (type any phrase)  – Get an AI translation & breakdown
+  exit             – Return to the main mode menu
 """.strip()
 
 
@@ -69,6 +74,7 @@ class EnglishTeachingBot:
         """
         self.progress = ProgressTracker(save_path=save_path)
         self._quiz_state = None   # Active quiz session or None
+        self._current_mode = None  # "menu", "curriculum", or "conversational"
 
     # ------------------------------------------------------------------
     # Public interface
@@ -96,17 +102,35 @@ class EnglishTeachingBot:
 
         cmd = text.lower()
 
-        if cmd in ("quit", "exit", "bye", "q"):
+        # Always-available commands
+        if cmd in ("quit", "bye"):
             return "Goodbye! Keep practicing your English. 👋"
 
         if cmd in ("help", "?"):
             return HELP_TEXT
 
+        # ── No mode set / mode menu ────────────────────────────────────
+        if self._current_mode is None or self._current_mode == "menu":
+            return self._handle_mode_selection(cmd)
+
+        # "menu" returns to mode selection from any active mode
+        if cmd == "menu":
+            self._current_mode = "menu"
+            return self._show_mode_menu()
+
+        # ── Conversational sandbox ─────────────────────────────────────
+        if self._current_mode == "conversational":
+            if cmd == "exit":
+                self._current_mode = "menu"
+                return self._show_mode_menu()
+            return self._ask_local_ai(text)
+
+        # ── Curriculum mode ────────────────────────────────────────────
+        if cmd == "exit":
+            return "Goodbye! Keep practicing your English. 👋"
+
         if cmd in ("start", "begin", "go"):
             return self._start_learning()
-
-        if cmd == "menu":
-            return self._show_menu()
 
         if cmd == "levels":
             return self._list_levels()
@@ -141,6 +165,40 @@ class EnglishTeachingBot:
 
         # Fallback: Route to the local AI
         return self._ask_local_ai(text)
+
+    # ------------------------------------------------------------------
+    # Mode menu helpers
+    # ------------------------------------------------------------------
+
+    def _show_mode_menu(self):
+        return (
+            "\n"
+            "╔══════════════════════════════════════════════════════════════╗\n"
+            "║              Choose Your Learning Mode                       ║\n"
+            "╚══════════════════════════════════════════════════════════════╝\n"
+            "\n"
+            "[1] 📚 Guided Curriculum (Structured Lessons & Quizzes)\n"
+            "[2] 💬 Conversational Sandbox (AI Translation & Slang Breakdown)\n"
+            "\n"
+            "Type 1 or 2 to select a mode."
+        )
+
+    def _handle_mode_selection(self, cmd):
+        if cmd == "1":
+            self._current_mode = "curriculum"
+            return (
+                "📚 Curriculum Mode activated!\n\n"
+                "Type 'start' to begin your first lesson, 'levels' to browse topics,\n"
+                "or 'help' for all available commands."
+            )
+        if cmd == "2":
+            self._current_mode = "conversational"
+            return (
+                "💬 Conversational Sandbox activated!\n\n"
+                "Type any phrase in English or Samoan and I'll translate it for you.\n"
+                "Type 'exit' or 'menu' to return to the main menu."
+            )
+        return self._show_mode_menu()
 
     # ------------------------------------------------------------------
     # Learning flow
@@ -208,9 +266,10 @@ class EnglishTeachingBot:
             "",
             done_marker if done_marker else "",
             "─── What next? ────────────────────────────────────────────",
-            "  Type 'quiz'  to test your knowledge",
-            "  Type 'next'  to move to the next topic",
-            "  Type 'menu'  to choose a different topic",
+            "  Type 'quiz'   to test your knowledge",
+            "  Type 'next'   to move to the next topic",
+            "  Type 'levels' to choose a different level",
+            "  Type 'menu'   to return to the main mode menu",
         ]
         return "\n".join(line for line in lines if line is not None)
 
@@ -226,6 +285,7 @@ class EnglishTeachingBot:
             lines.append(f"     {desc}")
             lines.append("")
         lines.append("Type a level name (e.g. 'basic') or number to begin.")
+        lines.append("Type 'menu' to return to the main mode selection menu.")
         return "\n".join(lines)
 
     def _list_levels(self):
@@ -407,9 +467,10 @@ class EnglishTeachingBot:
             f"  Score: {correct}/{total} ({percentage}%)",
             f"  {grade}",
             "",
-            "  Type 'next'  to continue to the next lesson",
-            "  Type 'quiz'  to retry this quiz",
-            "  Type 'menu'  to choose a different topic",
+            "  Type 'next'   to continue to the next lesson",
+            "  Type 'quiz'   to retry this quiz",
+            "  Type 'levels' to choose a different level",
+            "  Type 'menu'   to return to the main mode menu",
         ]
         return "\n".join(lines)
 
@@ -419,18 +480,27 @@ class EnglishTeachingBot:
 
     def _ask_local_ai(self, text):
         """Routes unknown questions to the local LLM server."""
-        current_level = self.progress.current_level
-        current_topic = self.progress.current_topic or "general English basics"
-
-        system_prompt = (
-            "You are Karite, an enthusiastic and expert Samoan-English bilingual teacher. "
-            f"The user is currently studying the '{current_level}' level, specifically '{current_topic}'. "
-            "If the user asks a general question, answer it clearly and concisely. "
-            "CRITICAL INSTRUCTION: If the user inputs a sentence for translation (either Samoan to English, or English to Samoan), you MUST strictly follow this format: "
-            "\n1. 🎯 **Translation:** Provide the direct translation. "
-            "\n2. 🧠 **How it Works (Grammar):** Explain the sentence structure. Explicitly point out grammatical differences, such as English Subject-Verb-Object (SVO) versus Samoan Verb-Subject-Object (VSO) patterns. "
-            "\n3. 📖 **Vocabulary Breakdown:** Briefly define the key words used."
-        )
+        if self._current_mode == "conversational":
+            system_prompt = (
+                "You are Karite, an expert Samoan-English bilingual teacher. "
+                "The user is in the Conversational Sandbox. They will give you a phrase in English or Samoan. "
+                "You MUST output your response in this exact strict format: "
+                "\n\n1. 🤖 **Direct Translation:** (The literal, word-for-word meaning) "
+                "\n2. 🗣️ **Conversational Translation:** (How a native speaker would actually say it in casual conversation) "
+                "\n3. 🧠 **The Breakdown:** (Explain WHY the conversational version is different. Point out any idioms, dropped words, or cultural context)."
+            )
+        else:
+            current_level = self.progress.current_level
+            current_topic = self.progress.current_topic or "general English basics"
+            system_prompt = (
+                "You are Karite, an enthusiastic and expert Samoan-English bilingual teacher. "
+                f"The user is currently studying the '{current_level}' level, specifically '{current_topic}'. "
+                "If the user asks a general question, answer it clearly and concisely. "
+                "CRITICAL INSTRUCTION: If the user inputs a sentence for translation (either Samoan to English, or English to Samoan), you MUST strictly follow this format: "
+                "\n1. 🎯 **Translation:** Provide the direct translation. "
+                "\n2. 🧠 **How it Works (Grammar):** Explain the sentence structure. Explicitly point out grammatical differences, such as English Subject-Verb-Object (SVO) versus Samoan Verb-Subject-Object (VSO) patterns. "
+                "\n3. 📖 **Vocabulary Breakdown:** Briefly define the key words used."
+            )
 
         payload = {
             "model": "llama3", # Note: We can change this to the exact local model name later
