@@ -30,23 +30,23 @@ class TestCurriculum:
         assert levels == ["basic", "intermediate", "advanced"]
 
     def test_basic_topics_exist(self):
-        topics = get_topics("basic")
+        topics = get_topics("English", "basic")
         assert len(topics) >= 5
         assert "alphabet" in topics
         assert "greetings" in topics
 
     def test_intermediate_topics_exist(self):
-        topics = get_topics("intermediate")
+        topics = get_topics("English", "intermediate")
         assert "present_tenses" in topics
         assert "past_tenses" in topics
 
     def test_advanced_topics_exist(self):
-        topics = get_topics("advanced")
+        topics = get_topics("English", "advanced")
         assert "conditionals" in topics
         assert "idioms" in topics
 
     def test_get_lesson_returns_dict(self):
-        lesson = get_lesson("basic", "alphabet")
+        lesson = get_lesson("English", "basic", "alphabet")
         assert isinstance(lesson, dict)
         assert "title" in lesson
         assert "explanation" in lesson
@@ -55,8 +55,8 @@ class TestCurriculum:
 
     def test_lesson_quiz_has_correct_structure(self):
         for level in get_levels():
-            for topic in get_topics(level):
-                lesson = get_lesson(level, topic)
+            for topic in get_topics("English", level):
+                lesson = get_lesson("English", level, topic)
                 for q in lesson["quiz"]:
                     assert "question" in q
                     assert "choices" in q
@@ -69,39 +69,39 @@ class TestCurriculum:
                     )
 
     def test_get_lesson_unknown_level_returns_none(self):
-        assert get_lesson("unknown", "alphabet") is None
+        assert get_lesson("English", "unknown", "alphabet") is None
 
     def test_get_lesson_unknown_topic_returns_none(self):
-        assert get_lesson("basic", "nonexistent_topic") is None
+        assert get_lesson("English", "basic", "nonexistent_topic") is None
 
     def test_level_descriptions_not_empty(self):
         for level in get_levels():
-            desc = get_level_description(level)
+            desc = get_level_description("English", level)
             assert isinstance(desc, str) and len(desc) > 0
 
     def test_next_topic_advances_within_level(self):
-        topics = get_topics("basic")
+        topics = get_topics("English", "basic")
         first = topics[0]
         second = topics[1]
-        nxt_level, nxt_topic = next_topic("basic", first)
+        nxt_level, nxt_topic = next_topic("English", "basic", first)
         assert nxt_level == "basic"
         assert nxt_topic == second
 
     def test_next_topic_advances_across_levels(self):
         # Last topic of basic should advance to first topic of intermediate
-        basic_topics = get_topics("basic")
+        basic_topics = get_topics("English", "basic")
         last_basic = basic_topics[-1]
-        int_topics = get_topics("intermediate")
+        int_topics = get_topics("English", "intermediate")
         first_inter = int_topics[0]
 
-        nxt_level, nxt_topic = next_topic("basic", last_basic)
+        nxt_level, nxt_topic = next_topic("English", "basic", last_basic)
         assert nxt_level == "intermediate"
         assert nxt_topic == first_inter
 
     def test_next_topic_end_of_curriculum(self):
-        adv_topics = get_topics("advanced")
+        adv_topics = get_topics("English", "advanced")
         last_adv = adv_topics[-1]
-        nxt_level, nxt_topic = next_topic("advanced", last_adv)
+        nxt_level, nxt_topic = next_topic("English", "advanced", last_adv)
         assert nxt_level is None
         assert nxt_topic is None
 
@@ -350,16 +350,16 @@ class TestEnglishTeachingBot:
 
     def test_all_levels_have_no_empty_explanations(self):
         for level in get_levels():
-            for topic in get_topics(level):
-                lesson = get_lesson(level, topic)
+            for topic in get_topics("English", level):
+                lesson = get_lesson("English", level, topic)
                 assert lesson["explanation"].strip() != "", (
                     f"Empty explanation in {level}/{topic}"
                 )
 
     def test_all_lessons_have_examples(self):
         for level in get_levels():
-            for topic in get_topics(level):
-                lesson = get_lesson(level, topic)
+            for topic in get_topics("English", level):
+                lesson = get_lesson("English", level, topic)
                 assert len(lesson["examples"]) > 0, (
                     f"No examples in {level}/{topic}"
                 )
@@ -370,13 +370,13 @@ class TestEnglishTeachingBot:
         bot._current_mode = "curriculum"
         bot.handle("start")
         for level in get_levels():
-            for topic in get_topics(level):
+            for topic in get_topics("English", level):
                 bot.handle(level)
                 bot.progress.current_topic = topic
                 response = bot.handle("quiz")
                 assert isinstance(response, str)
                 if bot._quiz_state:
-                    lesson = get_lesson(level, topic)
+                    lesson = get_lesson("English", level, topic)
                     for _ in lesson["quiz"]:
                         # Answer with the correct answer for each question
                         q = lesson["quiz"][bot._quiz_state["index"]]
