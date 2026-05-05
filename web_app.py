@@ -89,10 +89,12 @@ if st.session_state.logged_in_user:
         st.markdown("---")
         st.header(UI_TEXT[lang]["nav_header"])
         if st.button(UI_TEXT[lang]["btn_menu"]):
+            st.session_state.chat_history.append({"role": "user", "content": "Menu"})
             response = st.session_state.bot.handle("menu")
             st.session_state.chat_history.append({"role": "assistant", "content": response})
             st.rerun()
         if st.button(UI_TEXT[lang]["btn_progress"]):
+            st.session_state.chat_history.append({"role": "user", "content": "Check Progress"})
             response = st.session_state.bot.handle("progress")
             st.session_state.chat_history.append({"role": "assistant", "content": response})
             st.rerun()

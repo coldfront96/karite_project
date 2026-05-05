@@ -83,12 +83,12 @@ class EnglishTeachingBot:
             initial_data=initial_progress,
             save_callback=save_callback,
         )
-        self.ui_language = "English"
-        self.target_language = "English"
         self._quiz_state = None          # Active quiz session or None
         self._current_mode = None        # "menu", "curriculum", "conversational", "review", or "admin"
         self._admin_pending_phrase = None  # Phrase awaiting admin correction
         self._admin_awaiting_password = False  # True while waiting for admin password
+        self.target_language = "English"
+        self.ui_language = "English"
         self._review_topic = None        # Topic currently being reviewed in endless practice loop
 
     # ------------------------------------------------------------------
@@ -694,8 +694,8 @@ class EnglishTeachingBot:
                 "\n\n1. 🤖 **Direct Translation:** (The literal, word-for-word meaning) "
                 "\n2. 🗣️ **Conversational Translation:** (How a native speaker would actually say it in casual conversation) "
                 "\n3. 🧠 **The Breakdown:** (Explain WHY the conversational version is different. Point out any idioms, dropped words, or cultural context)."
+                + f"CRITICAL INSTRUCTION: The user is studying the '{self.target_language}' course. You MUST explain all grammar, vocabulary, and concepts using the rules of {self.target_language}. Furthermore, you MUST speak, converse, and provide all of your explanations entirely in {self.ui_language}. Use {self.ui_language} as your primary medium of communication."
                 + memory_context
-                + f" CRITICAL INSTRUCTION: You MUST speak, converse, and provide all explanations entirely in {self.ui_language}. Use {self.ui_language} as your primary medium of communication."
             )
         else:
             current_level = self.progress.current_level
