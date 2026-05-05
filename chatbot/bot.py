@@ -138,6 +138,7 @@ class EnglishTeachingBot:
         self.target_language = "English"
         self.ui_language = "English"
         self._review_topic = None        # Topic currently being reviewed in endless practice loop
+        self._review_last_context = None # Last AI-generated question for context injection
 
     # ------------------------------------------------------------------
     # Helpers
@@ -663,22 +664,41 @@ class EnglishTeachingBot:
         return self._generate_practice()
 
     def _generate_practice(self, user_input=None):
-        """Generate an AI-driven practice question or evaluate a user answer."""
+        """Generate an AI-driven practice question and evaluate answers with strict state tracking."""
+        
+        display_topic = self._review_topic.split("/")[-1].replace("_", " ").title()
+        
         system_prompt = (
             f"You are Karite, an expert {self.target_language} teacher. "
-            f"The user is in an endless practice loop reviewing the topic: '{self._review_topic}'. "
+            f"The user is reviewing the topic: '{display_topic}'. "
+            "You MUST format your response to EXACTLY match this visual template:\n\n"
+            "──────────────────────────────────────────────────────────────\n"
+            f"  Review: {display_topic}\n"
+            "──────────────────────────────────────────────────────────────\n\n"
+            "[Write a fresh, unique explanation of the grammar concept here.]\n\n"
+            "─── Examples ──────────────────────────────────────────────\n"
+            "[Provide 2 to 3 brand new examples demonstrating the concept.]\n\n"
+            "─── Practice Question ─────────────────────────────────────\n"
+            "[Provide ONE multiple choice question (A, B, C, D) to test this concept. CRITICAL: DO NOT REVEAL THE CORRECT ANSWER YET. Keep it a secret.]\n\n"
+            "─── What next? ────────────────────────────────────────────\n"
+            "  Type your answer (A, B, C, or D)\n"
+            "  Type 'next' to skip to a different example\n"
+            "  Type 'menu' to return to the main menu"
         )
-        if user_input is None:
-            user_message = (
-                "Generate ONE brief, brand new example teaching this concept, "
-                "and then ask the user ONE question to test their understanding. "
-                "Do NOT provide the answer yet."
-            )
+        
+        if user_input is None or user_input.lower() == "next":
+            user_message = "Generate a brand new review module using the strict visual template."
+            self._review_last_context = None # Clear past context for a fresh start
         else:
+            # Inject the physical memory of the last question back into the prompt
+            past_context = getattr(self, '_review_last_context', 'No previous context found.')
             user_message = (
-                f"The user answered: '{user_input}'. "
-                f"Evaluate their answer. If wrong, explain why using {self.target_language} rules. "
-                "Then, immediately generate ONE new example and question to keep the practice loop going."
+                f"Here is the exact lesson and question you previously asked the user:\n"
+                f"--- PAST QUESTION START ---\n{past_context}\n--- PAST QUESTION END ---\n\n"
+                f"The user answered: '{user_input}'.\n"
+                "First, evaluate their answer. Start with Correct (✅) or Incorrect (❌). "
+                "You MUST give a DETAILED explanation of exactly WHY they were right or wrong based on the grammatical rules.\n"
+                "Then, immediately below your feedback, generate a BRAND NEW review module using the visual template."
             )
 
         payload = {
@@ -699,7 +719,11 @@ class EnglishTeachingBot:
             response.raise_for_status()
             data = response.json()
             ai_reply = data["choices"][0]["message"]["content"]
-            return f"🤖 Karite AI: {ai_reply}\n\n(Type 'menu' or 'exit' to leave the practice loop.)"
+            
+            # Save the AI's exact output to system RAM so it remembers it next time
+            self._review_last_context = ai_reply
+            
+            return ai_reply
         except (requests.exceptions.RequestException, KeyError, IndexError):
             return "Oops! I couldn't reach my AI brain. Please make sure the local server is running! 🌸"
 
