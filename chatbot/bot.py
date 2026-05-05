@@ -21,40 +21,88 @@ from .progress import ProgressTracker
 # Public constants
 # -----------------------------------------------------------------------
 
-WELCOME_MESSAGE = """
-╔══════════════════════════════════════════════════════════════╗
-║       Welcome to Karite English Teaching Chatbot! 🇬🇧        ║
-╚══════════════════════════════════════════════════════════════╝
-
-I can help you learn English from absolute basics to advanced level.
-
-Please choose your learning mode:
-
-[1] 📚 Guided Curriculum (Structured Lessons & Quizzes)
-[2] 💬 Conversational Sandbox (AI Translation & Slang Breakdown)
-
-Type 1 or 2 to select a mode. Type 'help' for more commands.
-""".strip()
-
-HELP_TEXT = """
-Available commands:
-  menu             – Return to the main mode selection menu
-  help             – Show this help message
-  quit / bye       – Exit the chatbot
-
-  ── Curriculum Mode ──────────────────────────────
-  start            – Start or resume your learning journey
-  levels           – List available difficulty levels
-  topics           – List topics in the current level
-  next             – Move to the next lesson
-  quiz             – Take the quiz for the current lesson
-  progress         – View your progress and quiz scores
-  reset            – Reset all progress and start over
-
-  ── Conversational Sandbox ───────────────────────
-  (type any phrase)  – Get an AI translation & breakdown
-  exit             – Return to the main mode menu
-""".strip()
+BOT_TEXT = {
+    "English": {
+        "welcome": (
+            "╔══════════════════════════════════════════════════════════════╗\n"
+            "║       Welcome to Karite English Teaching Chatbot!            ║\n"
+            "╚══════════════════════════════════════════════════════════════╝\n"
+            "\n"
+            "I can help you learn English from absolute basics to advanced level.\n"
+            "\n"
+            "Please choose your learning mode:\n"
+            "\n"
+            "[1] 📚 Guided Curriculum (Structured Lessons & Quizzes)\n"
+            "[2] 💬 Conversational Sandbox (AI Translation & Slang Breakdown)\n"
+            "\n"
+            "Type 1 or 2 to select a mode. Type 'help' for more commands."
+        ),
+        "help": (
+            "Available commands:\n"
+            "  menu             – Return to the main menu\n"
+            "  help             – Show this help message\n"
+            "  start            – Start your learning journey\n"
+            "  levels           – List difficulty levels\n"
+            "  topics           – List topics\n"
+            "  next             – Next lesson\n"
+            "  quiz             – Take quiz\n"
+            "  progress         – View progress\n"
+            "  exit             – Return to main menu"
+        ),
+        "goodbye": "Goodbye! Keep practicing. 👋",
+        "mode_menu": (
+            "\n"
+            "╔══════════════════════════════════════════════════════════════╗\n"
+            "║              Choose Your Learning Mode                       ║\n"
+            "╚══════════════════════════════════════════════════════════════╝\n"
+            "\n"
+            "[1] 📚 Guided Curriculum (Structured Lessons & Quizzes)\n"
+            "[2] 💬 Conversational Sandbox (AI Translation & Slang Breakdown)\n"
+            "\n"
+            "Type 1 or 2 to select a mode."
+        ),
+    },
+    "Samoan": {
+        "welcome": (
+            "╔══════════════════════════════════════════════════════════════╗\n"
+            "║       Afio mai i le Karite Faiaoga Igilisi!                  ║\n"
+            "╚══════════════════════════════════════════════════════════════╝\n"
+            "\n"
+            "E mafai ona ou fesoasoani ia te oe e a'o le Igilisi.\n"
+            "\n"
+            "Fa'amolemole filifili lau auala e a'o ai:\n"
+            "\n"
+            "[1] 📚 Lesona Fa'atulagaina (Lesona & Su'ega)\n"
+            "[2] 💬 Talanoaga Saoloto (Fa'aliliuga AI)\n"
+            "\n"
+            "Ta'i le 1 po'o le 2 e filifili ai. Ta'i le 'help' mo nisi tulafono."
+        ),
+        "help": (
+            "Tulafono e mafai ona fa'aaoga:\n"
+            "  menu             – Toe fo'i i le lisi autu\n"
+            "  help             – Faaali mai lenei fesoasoani\n"
+            "  start            – Amata lau a'oa'oga\n"
+            "  levels           – Lisi vaega faigata\n"
+            "  topics           – Lisi autu\n"
+            "  next             – Lesona e soso'o ai\n"
+            "  quiz             – Fai le su'ega\n"
+            "  progress         – Va'ai i le alualu i luma\n"
+            "  exit             – Toe fo'i i le lisi autu"
+        ),
+        "goodbye": "Tofa! Ia faaauau pea le fa'ata'ita'i. 👋",
+        "mode_menu": (
+            "\n"
+            "╔══════════════════════════════════════════════════════════════╗\n"
+            "║              Filifili Lau Auala e A'o Ai                     ║\n"
+            "╚══════════════════════════════════════════════════════════════╝\n"
+            "\n"
+            "[1] 📚 Lesona Fa'atulagaina\n"
+            "[2] 💬 Talanoaga Saoloto\n"
+            "\n"
+            "Ta'i le 1 po'o le 2 e filifili ai."
+        ),
+    },
+}
 
 
 class EnglishTeachingBot:
@@ -97,7 +145,8 @@ class EnglishTeachingBot:
 
     def greet(self):
         """Return the welcome message."""
-        return WELCOME_MESSAGE
+        lang = self.ui_language if self.ui_language in BOT_TEXT else "English"
+        return BOT_TEXT[lang]["welcome"]
 
     def handle(self, user_input):
         """
@@ -119,10 +168,12 @@ class EnglishTeachingBot:
 
         # Always-available commands
         if cmd in ("quit", "bye"):
-            return "Goodbye! Keep practicing your English. 👋"
+            lang = self.ui_language if self.ui_language in BOT_TEXT else "English"
+            return BOT_TEXT[lang]["goodbye"]
 
         if cmd in ("help", "?"):
-            return HELP_TEXT
+            lang = self.ui_language if self.ui_language in BOT_TEXT else "English"
+            return BOT_TEXT[lang]["help"]
 
         # ── Admin password prompt ──────────────────────────────────────
         if self._admin_awaiting_password:
@@ -169,7 +220,8 @@ class EnglishTeachingBot:
 
         # ── Curriculum mode ────────────────────────────────────────────
         if cmd == "exit":
-            return "Goodbye! Keep practicing your English. 👋"
+            lang = self.ui_language if self.ui_language in BOT_TEXT else "English"
+            return BOT_TEXT[lang]["goodbye"]
 
         if cmd in ("start", "begin", "go"):
             return self._start_learning()
@@ -213,17 +265,8 @@ class EnglishTeachingBot:
     # ------------------------------------------------------------------
 
     def _show_mode_menu(self):
-        menu = (
-            "\n"
-            "╔══════════════════════════════════════════════════════════════╗\n"
-            "║              Choose Your Learning Mode                       ║\n"
-            "╚══════════════════════════════════════════════════════════════╝\n"
-            "\n"
-            "[1] 📚 Guided Curriculum (Structured Lessons & Quizzes)\n"
-            "[2] 💬 Conversational Sandbox (AI Translation & Slang Breakdown)\n"
-            "\n"
-            "Type 1 or 2 to select a mode."
-        )
+        lang = self.ui_language if self.ui_language in BOT_TEXT else "English"
+        menu = BOT_TEXT[lang]["mode_menu"]
         completed = self.progress.completed_topics_list()
         if completed:
             menu += (
