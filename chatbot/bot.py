@@ -140,13 +140,20 @@ class EnglishTeachingBot:
         self._review_topic = None        # Topic currently being reviewed in endless practice loop
 
     # ------------------------------------------------------------------
+    # Helpers
+    # ------------------------------------------------------------------
+
+    def _lang(self):
+        """Return the active UI language key, falling back to 'English'."""
+        return self.ui_language if self.ui_language in BOT_TEXT else "English"
+
+    # ------------------------------------------------------------------
     # Public interface
     # ------------------------------------------------------------------
 
     def greet(self):
         """Return the welcome message."""
-        lang = self.ui_language if self.ui_language in BOT_TEXT else "English"
-        return BOT_TEXT[lang]["welcome"]
+        return BOT_TEXT[self._lang()]["welcome"]
 
     def handle(self, user_input):
         """
@@ -168,12 +175,10 @@ class EnglishTeachingBot:
 
         # Always-available commands
         if cmd in ("quit", "bye"):
-            lang = self.ui_language if self.ui_language in BOT_TEXT else "English"
-            return BOT_TEXT[lang]["goodbye"]
+            return BOT_TEXT[self._lang()]["goodbye"]
 
         if cmd in ("help", "?"):
-            lang = self.ui_language if self.ui_language in BOT_TEXT else "English"
-            return BOT_TEXT[lang]["help"]
+            return BOT_TEXT[self._lang()]["help"]
 
         # ── Admin password prompt ──────────────────────────────────────
         if self._admin_awaiting_password:
@@ -220,8 +225,7 @@ class EnglishTeachingBot:
 
         # ── Curriculum mode ────────────────────────────────────────────
         if cmd == "exit":
-            lang = self.ui_language if self.ui_language in BOT_TEXT else "English"
-            return BOT_TEXT[lang]["goodbye"]
+            return BOT_TEXT[self._lang()]["goodbye"]
 
         if cmd in ("start", "begin", "go"):
             return self._start_learning()
@@ -265,8 +269,7 @@ class EnglishTeachingBot:
     # ------------------------------------------------------------------
 
     def _show_mode_menu(self):
-        lang = self.ui_language if self.ui_language in BOT_TEXT else "English"
-        menu = BOT_TEXT[lang]["mode_menu"]
+        menu = BOT_TEXT[self._lang()]["mode_menu"]
         completed = self.progress.completed_topics_list()
         if completed:
             menu += (
