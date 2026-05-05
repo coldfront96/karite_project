@@ -381,3 +381,79 @@ class TestEnglishTeachingBot:
                         # Answer with the correct answer for each question
                         q = lesson["quiz"][bot._quiz_state["index"]]
                         bot.handle(q["answer"])
+
+
+# ---------------------------------------------------------------------------
+# Review mode tests
+# ---------------------------------------------------------------------------
+
+
+class TestReviewMode:
+    def setup_method(self):
+        """Fresh bot with curriculum mode and one completed topic."""
+        self.bot = EnglishTeachingBot()
+        self.bot._current_mode = "curriculum"
+        # Manually mark a topic as complete so review can be requested
+        self.bot.progress.mark_topic_complete("basic", "alphabet")
+
+    def test_review_unknown_topic_returns_error(self):
+        response = self.bot.handle("review nonexistent_topic")
+        assert "not in your completed topics" in response.lower() or "❌" in response
+
+    def test_review_valid_topic_sets_mode(self):
+        # _generate_practice makes an HTTP call; patch it to avoid network
+        self.bot._generate_practice = lambda user_input=None: "Practice question!"
+        self.bot.handle("review alphabet")
+        assert self.bot._current_mode == "review"
+        assert self.bot._review_topic == "basic/alphabet"
+
+    def test_review_valid_topic_sets_review_topic(self):
+        self.bot._generate_practice = lambda user_input=None: "Practice question!"
+        self.bot.handle("review alphabet")
+        assert self.bot._review_topic is not None
+        assert "alphabet" in self.bot._review_topic
+
+    def test_review_menu_exits_review_mode(self):
+        self.bot._current_mode = "review"
+        self.bot._review_topic = "basic/alphabet"
+        response = self.bot.handle("menu")
+        assert self.bot._current_mode == "menu"
+        assert self.bot._review_topic is None
+        assert "curriculum" in response.lower() or "conversational" in response.lower()
+
+    def test_review_exit_exits_review_mode(self):
+        self.bot._current_mode = "review"
+        self.bot._review_topic = "basic/alphabet"
+        response = self.bot.handle("exit")
+        assert self.bot._current_mode == "menu"
+        assert self.bot._review_topic is None
+
+    def test_review_mode_routes_input_to_generate_practice(self):
+        self.bot._current_mode = "review"
+        self.bot._review_topic = "basic/alphabet"
+        called_with = []
+        self.bot._generate_practice = lambda user_input=None: called_with.append(user_input) or "ok"
+        self.bot.handle("my answer here")
+        assert called_with == ["my answer here"]
+
+    def test_menu_shows_review_hint_when_topics_completed(self):
+        self.bot._current_mode = "menu"
+        response = self.bot._show_mode_menu()
+        assert "review" in response.lower()
+
+    def test_menu_no_review_hint_when_no_completed_topics(self):
+        bot = EnglishTeachingBot()
+        bot._current_mode = "menu"
+        response = bot._show_mode_menu()
+        assert "review [topic" not in response.lower()
+
+    def test_bot_has_target_language_attribute(self):
+        bot = EnglishTeachingBot()
+        assert hasattr(bot, "target_language")
+        assert isinstance(bot.target_language, str)
+
+    def test_bot_has_review_topic_attribute(self):
+        bot = EnglishTeachingBot()
+        assert hasattr(bot, "_review_topic")
+        assert bot._review_topic is None
+
