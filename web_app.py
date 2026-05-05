@@ -19,9 +19,11 @@ with st.sidebar:
     if st.button("Menu"):
         response = st.session_state.bot.handle("menu")
         st.session_state.chat_history.append({"role": "assistant", "content": response})
+        st.rerun()
     if st.button("Check Progress"):
         response = st.session_state.bot.handle("progress")
         st.session_state.chat_history.append({"role": "assistant", "content": response})
+        st.rerun()
     st.markdown("---")
     st.markdown("Type commands like `start`, `next`, or `quiz` in the chat, or switch to conversational mode to chat freely!")
 
