@@ -86,8 +86,21 @@ if st.session_state.logged_in_user:
             key="language",
         )
         lang = st.session_state.language
+        
+        # --- MISSING COURSE SELECTOR INJECTED HERE ---
+        st.markdown("---")
+        course_options = ["English", "Samoan"]
+        st.session_state.target_course = st.radio(
+            "Course / Kosi:", 
+            options=course_options,
+            index=0 if st.session_state.get("target_course", "English") == "English" else 1
+        )
+        
+        # Sync the RAM to the Bot
         if "bot" in st.session_state:
             st.session_state.bot.ui_language = st.session_state.language
+            st.session_state.bot.target_language = st.session_state.target_course
+
         st.markdown("---")
         st.header(UI_TEXT[lang]["nav_header"])
         if st.button(UI_TEXT[lang]["btn_menu"]):
@@ -100,22 +113,22 @@ if st.session_state.logged_in_user:
             response = st.session_state.bot.handle("progress")
             st.session_state.chat_history.append({"role": "assistant", "content": response})
             st.rerun()
-        st.markdown("---")
-        # Dynamic one-click review buttons for completed topics
-        completed = st.session_state.bot.progress.completed_topics_list()
-        if completed:
-            st.subheader(UI_TEXT[lang]["review_header"])
-            for topic_key in completed:
-                # topic_key is "level/topic" – display just the topic part
-                bare_topic = topic_key.split("/", 1)[-1]
-                short_name = bare_topic.replace("_", " ").title()
-                if st.button(f"🔁 {short_name}", key=f"review_{topic_key}"):
-                    cmd = f"review {bare_topic}"
-                    st.session_state.chat_history.append({"role": "user", "content": cmd})
-                    response = st.session_state.bot.handle(cmd)
+            
+        # --- Endless Practice UI ---
+        if "bot" in st.session_state:
+            completed_topics = st.session_state.bot.progress.completed_topics_list()
+            if completed_topics:
+                st.markdown("---")
+                st.subheader("🔁 Practice & Review")
+                review_choice = st.selectbox("Select past topic to practice:", completed_topics)
+                if st.button("Start Practice Loop"):
+                    command = f"review {review_choice}"
+                    st.session_state.chat_history.append({"role": "user", "content": f"Start Practice: {review_choice}"})
+                    response = st.session_state.bot.handle(command)
                     st.session_state.chat_history.append({"role": "assistant", "content": response})
                     st.rerun()
-            st.markdown("---")
+                    
+        st.markdown("---")
         st.markdown(UI_TEXT[lang]["instructions"])
 
     st.title(UI_TEXT[lang]["title"])
