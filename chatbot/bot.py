@@ -83,6 +83,7 @@ class EnglishTeachingBot:
             initial_data=initial_progress,
             save_callback=save_callback,
         )
+        self.ui_language = "English"
         self._quiz_state = None          # Active quiz session or None
         self._current_mode = None        # "menu", "curriculum", "conversational", or "admin"
         self._admin_pending_phrase = None  # Phrase awaiting admin correction
@@ -605,6 +606,7 @@ class EnglishTeachingBot:
                 "\n2. 🗣️ **Conversational Translation:** (How a native speaker would actually say it in casual conversation) "
                 "\n3. 🧠 **The Breakdown:** (Explain WHY the conversational version is different. Point out any idioms, dropped words, or cultural context)."
                 + memory_context
+                + f" CRITICAL INSTRUCTION: You MUST speak, converse, and provide all explanations entirely in {self.ui_language}. Use {self.ui_language} as your primary medium of communication."
             )
         else:
             current_level = self.progress.current_level
@@ -627,6 +629,7 @@ class EnglishTeachingBot:
                 "\n2. 🧠 **How it Works (Grammar):** Explain the sentence structure. Explicitly point out grammatical differences, such as English Subject-Verb-Object (SVO) versus Samoan Verb-Subject-Object (VSO) patterns. "
                 "\n3. 📖 **Vocabulary Breakdown:** Briefly define the key words used."
                 + lesson_context
+                + f" CRITICAL INSTRUCTION: You MUST speak, converse, and provide all explanations entirely in {self.ui_language}. Use {self.ui_language} as your primary medium of communication."
             )
 
         payload = {
