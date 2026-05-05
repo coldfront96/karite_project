@@ -739,7 +739,7 @@ CURRICULUM = {
                     "  • Fa'afetai    – Thank you\n"
                     "  • Tofa         – Goodbye"
                 ),
-                "questions": [
+                "quiz": [
                     {
                         "question": "What word order does Samoan use?",
                         "choices": [

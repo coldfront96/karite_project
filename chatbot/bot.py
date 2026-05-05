@@ -759,14 +759,13 @@ class EnglishTeachingBot:
                     "They will give you a phrase in English or Samoan."
                 )
             system_prompt = (
-                "You are Karite, an expert {self.target_language} teacher. "
+                f"You are Karite, an expert {self.target_language} teacher. "
                 + context_description
                 + " You MUST output your response in this exact strict format: "
                 "\n\n1. 🤖 **Direct Translation:** (The literal, word-for-word meaning) "
                 "\n2. 🗣️ **Conversational Translation:** (How a native speaker would actually say it in casual conversation) "
-                "\n3. 🧠 **The Breakdown:** (Explain WHY the conversational version is different. Point out any idioms, dropped words, or cultural context)."
-                + f"CRITICAL INSTRUCTION: The user is studying the '{self.target_language}' course. You MUST explain all grammar, vocabulary, and concepts using the rules of {self.target_language}. Furthermore, you MUST speak, converse, and provide all of your explanations entirely in {self.ui_language}. Use {self.ui_language} as your primary medium of communication."
-                f"CRITICAL INSTRUCTION: You MUST speak, converse, and provide all of your explanations entirely in {self.ui_language}. Use {self.ui_language} as your primary medium of communication. "
+                "\n3. 🧠 **The Breakdown:** (Explain WHY the conversational version is different. Point out any idioms, dropped words, or cultural context).\n\n"
+                + f"CRITICAL INSTRUCTION: The user is studying the '{self.target_language}' course. You MUST explain all grammar, vocabulary, and concepts using the rules of {self.target_language}. Furthermore, you MUST speak, converse, and provide all of your explanations entirely in {self.ui_language}. Use {self.ui_language} as your primary medium of communication.\n\n"
                 + memory_context
             )
         else:
