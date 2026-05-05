@@ -84,6 +84,8 @@ if st.session_state.logged_in_user:
             key="language",
         )
         lang = st.session_state.language
+        if "bot" in st.session_state:
+            st.session_state.bot.ui_language = st.session_state.language
         st.markdown("---")
         st.header(UI_TEXT[lang]["nav_header"])
         if st.button(UI_TEXT[lang]["btn_menu"]):
