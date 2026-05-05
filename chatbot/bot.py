@@ -3,8 +3,10 @@ Core chatbot logic for the English Teaching Chatbot.
 Handles conversation state, user input routing, and response generation.
 """
 
+import os
 import requests
 
+from .memory import load_dictionary, save_translation
 from .curriculum import (
     CURRICULUM,
     get_levels,
@@ -73,8 +75,10 @@ class EnglishTeachingBot:
             save_path: Optional path to persist progress (JSON).
         """
         self.progress = ProgressTracker(save_path=save_path)
-        self._quiz_state = None   # Active quiz session or None
-        self._current_mode = None  # "menu", "curriculum", or "conversational"
+        self._quiz_state = None          # Active quiz session or None
+        self._current_mode = None        # "menu", "curriculum", "conversational", or "admin"
+        self._admin_pending_phrase = None  # Phrase awaiting admin correction
+        self._admin_awaiting_password = False  # True while waiting for admin password
 
     # ------------------------------------------------------------------
     # Public interface
@@ -109,6 +113,10 @@ class EnglishTeachingBot:
         if cmd in ("help", "?"):
             return HELP_TEXT
 
+        # ── Admin password prompt ──────────────────────────────────────
+        if self._admin_awaiting_password:
+            return self._handle_admin_password(text)
+
         # ── No mode set / mode menu ────────────────────────────────────
         if self._current_mode is None or self._current_mode == "menu":
             return self._handle_mode_selection(cmd)
@@ -116,7 +124,16 @@ class EnglishTeachingBot:
         # "menu" returns to mode selection from any active mode
         if cmd == "menu":
             self._current_mode = "menu"
+            self._admin_pending_phrase = None
             return self._show_mode_menu()
+
+        # ── Admin teaching mode ────────────────────────────────────────
+        if self._current_mode == "admin":
+            if cmd == "exit":
+                self._current_mode = "menu"
+                self._admin_pending_phrase = None
+                return self._show_mode_menu()
+            return self._handle_admin_mode(text)
 
         # ── Conversational sandbox ─────────────────────────────────────
         if self._current_mode == "conversational":
@@ -198,7 +215,75 @@ class EnglishTeachingBot:
                 "Type any phrase in English or Samoan and I'll translate it for you.\n"
                 "Type 'exit' or 'menu' to return to the main menu."
             )
+        if cmd == "admin":
+            # Hidden command – intentionally omitted from help/menu text so that
+            # regular users are not aware of the admin interface.
+            self._admin_awaiting_password = True
+            return "🔒 Admin mode requested. Please enter the admin password:"
         return self._show_mode_menu()
+
+    # ------------------------------------------------------------------
+    # Admin mode helpers
+    # ------------------------------------------------------------------
+
+    # Admin password is read from the KARITE_ADMIN_PASSWORD environment variable.
+    # Falls back to the default value only when the variable is not set.
+    _ADMIN_PASSWORD = os.environ.get("KARITE_ADMIN_PASSWORD", "samoa2026")
+
+    def _handle_admin_password(self, text):
+        """Validate the admin password and transition into admin mode."""
+        self._admin_awaiting_password = False
+        if text == self._ADMIN_PASSWORD:
+            self._current_mode = "admin"
+            self._admin_pending_phrase = None
+            return (
+                "✅ Admin Teaching Mode activated!\n\n"
+                "Type a Samoan phrase and I'll show you my current translation.\n"
+                "You can then confirm or correct it.\n"
+                "Type 'exit' or 'menu' to leave admin mode."
+            )
+        return (
+            "❌ Incorrect password. Returning to the main menu.\n\n"
+            + self._show_mode_menu()
+        )
+
+    def _handle_admin_mode(self, text):
+        """
+        Admin teaching loop.
+
+        - If no phrase is pending: treat input as the Samoan phrase to test.
+          Ask the AI for its translation, show it, and ask the admin to confirm
+          or correct it.
+        - If a phrase is pending: treat input as the admin's verdict.
+          'yes' → nothing to save; otherwise save the correction.
+        """
+        if self._admin_pending_phrase is None:
+            # First turn: test the AI's translation
+            self._admin_pending_phrase = text
+            ai_response = self._ask_local_ai(text)
+            return (
+                f"{ai_response}\n\n"
+                "❓ Did I get this right?\n"
+                "   • Type 'yes' if the translation is perfect.\n"
+                "   • Type the correct English meaning if I was wrong."
+            )
+        else:
+            # Second turn: receive the admin's verdict
+            phrase = self._admin_pending_phrase
+            self._admin_pending_phrase = None
+
+            if text.strip().lower() == "yes":
+                return (
+                    "👍 Great! No correction needed. The translation has been kept as-is.\n\n"
+                    "Type another Samoan phrase to test, or 'menu' to exit admin mode."
+                )
+            else:
+                save_translation(phrase, text)
+                return (
+                    f"✅ Saved! I'll now remember:\n"
+                    f"   '{phrase}'  →  '{text}'\n\n"
+                    "Type another Samoan phrase to test, or 'menu' to exit admin mode."
+                )
 
     # ------------------------------------------------------------------
     # Learning flow
@@ -480,14 +565,38 @@ class EnglishTeachingBot:
 
     def _ask_local_ai(self, text):
         """Routes unknown questions to the local LLM server."""
-        if self._current_mode == "conversational":
+        if self._current_mode in ("conversational", "admin"):
+            # Inject any admin-taught translations so the AI is aware of them
+            custom_dict = load_dictionary()
+            memory_context = ""
+            if custom_dict:
+                entries = "\n".join(
+                    f"  - '{k}' means '{v}'" for k, v in custom_dict.items()
+                )
+                memory_context = (
+                    "\n\nIMPORTANT – Custom translation memory (admin-verified):\n"
+                    + entries
+                    + "\nAlways use these verified translations when the phrase appears."
+                )
+            if self._current_mode == "admin":
+                context_description = (
+                    "An admin teacher is testing your translations in Admin Teaching Mode. "
+                    "Provide your best Samoan-to-English (or English-to-Samoan) translation "
+                    "so the admin can verify or correct it."
+                )
+            else:
+                context_description = (
+                    "The user is in the Conversational Sandbox. "
+                    "They will give you a phrase in English or Samoan."
+                )
             system_prompt = (
                 "You are Karite, an expert Samoan-English bilingual teacher. "
-                "The user is in the Conversational Sandbox. They will give you a phrase in English or Samoan. "
-                "You MUST output your response in this exact strict format: "
+                + context_description
+                + " You MUST output your response in this exact strict format: "
                 "\n\n1. 🤖 **Direct Translation:** (The literal, word-for-word meaning) "
                 "\n2. 🗣️ **Conversational Translation:** (How a native speaker would actually say it in casual conversation) "
                 "\n3. 🧠 **The Breakdown:** (Explain WHY the conversational version is different. Point out any idioms, dropped words, or cultural context)."
+                + memory_context
             )
         else:
             current_level = self.progress.current_level
