@@ -195,8 +195,9 @@ class TestProgressTracker:
 
 class TestEnglishTeachingBot:
     def setup_method(self):
-        """Fresh in-memory bot before each test."""
+        """Fresh in-memory bot before each test, set to curriculum mode."""
         self.bot = EnglishTeachingBot()
+        self.bot._current_mode = "curriculum"
 
     def test_greet_returns_welcome_message(self):
         assert self.bot.greet() == WELCOME_MESSAGE
@@ -223,7 +224,7 @@ class TestEnglishTeachingBot:
 
     def test_menu_command(self):
         response = self.bot.handle("menu")
-        assert "basic" in response.lower()
+        assert "curriculum" in response.lower() or "conversational" in response.lower()
 
     def test_select_level_by_name(self):
         response = self.bot.handle("intermediate")
@@ -366,6 +367,7 @@ class TestEnglishTeachingBot:
     def test_complete_curriculum_flow(self):
         """Walk through every lesson and quiz without errors."""
         bot = EnglishTeachingBot()
+        bot._current_mode = "curriculum"
         bot.handle("start")
         for level in get_levels():
             for topic in get_topics(level):
