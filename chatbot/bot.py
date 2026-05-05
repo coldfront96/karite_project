@@ -69,12 +69,20 @@ class EnglishTeachingBot:
     # Initialisation
     # ------------------------------------------------------------------
 
-    def __init__(self, save_path=None):
+    def __init__(self, save_path=None, initial_progress=None, save_callback=None):
         """
         Args:
-            save_path: Optional path to persist progress (JSON).
+            save_path: Optional path to persist progress (JSON file).
+            initial_progress: Optional dict with pre-loaded progress data
+                              (e.g. fetched from the database).
+            save_callback: Optional callable(progress_dict) invoked whenever
+                           progress changes (used by the database backend).
         """
-        self.progress = ProgressTracker(save_path=save_path)
+        self.progress = ProgressTracker(
+            save_path=save_path,
+            initial_data=initial_progress,
+            save_callback=save_callback,
+        )
         self._quiz_state = None          # Active quiz session or None
         self._current_mode = None        # "menu", "curriculum", "conversational", or "admin"
         self._admin_pending_phrase = None  # Phrase awaiting admin correction
