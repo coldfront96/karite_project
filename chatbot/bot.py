@@ -765,6 +765,7 @@ class EnglishTeachingBot:
                 "\n2. 🗣️ **Conversational Translation:** (How a native speaker would actually say it in casual conversation) "
                 "\n3. 🧠 **The Breakdown:** (Explain WHY the conversational version is different. Point out any idioms, dropped words, or cultural context)."
                 + f"CRITICAL INSTRUCTION: The user is studying the '{self.target_language}' course. You MUST explain all grammar, vocabulary, and concepts using the rules of {self.target_language}. Furthermore, you MUST speak, converse, and provide all of your explanations entirely in {self.ui_language}. Use {self.ui_language} as your primary medium of communication."
+                f"CRITICAL INSTRUCTION: You MUST speak, converse, and provide all of your explanations entirely in {self.ui_language}. Use {self.ui_language} as your primary medium of communication. "
                 + memory_context
             )
         else:
